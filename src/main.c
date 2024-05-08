@@ -1,16 +1,43 @@
 #include "../pipex.h"
 
-char *path_test(char **argv, char **envp)
+void free2pointers(char **str)
+{
+	int i;
+
+	i = 0;
+	while(str[i])
+	{
+		free(str[i]);
+		i++;
+	}
+}
+
+void find_path(char **argv, char **envp)
 {
 	char *path;
-	char **path2;
+	char **partpath;
+	char *line;
+	int i;
+	t_pipex man;
 
-	path2 = ft_strjoin(argv[2], argv[1]);
-	path2 = ft_split(path, ' ');
-	path = ft_strjoin("/bin/", argv[1]);
-	if (execve(path, &path2, envp) == -1)
+	i = 0;
+	while (ft_strncmp(envp[i], "PATH=", 5) != 0)
+		i++;
+	partpath = ft_split(envp[i] + 5, ':');
+	i = 0;
+	while (partpath[i])
 	{
-		printf("command not found: %s\n", argv[1]);
+		line = ft_strjoin(partpath[i], "/");
+		line = ft_strjoinfree(line, argv[1]);
+		
+		if (access(line, X_OK) == 0)
+		{
+			printf("it exists:\n%s\n", line);
+			free2pointers(partpath);
+			man.path = line;
+		}
+		free(line);
+		i++;
 	}
 }
 
@@ -18,5 +45,18 @@ char *path_test(char **argv, char **envp)
 
 int main(int argc, char **argv, char **envp)
 {
-		path_test(argv, envp);
+	int fd[2];
+	pid_t p;
+
+	// if(argc != 4)
+	// {
+	// 	printf("not anoug arg");
+	// 	return(1); 
+	// }
+	find_path(argv, envp);
+	// if(pipe(fd) == -1)
+	// 	perror("Pipe Failed\n");
+	
+	// p = fork();
+	
 }
