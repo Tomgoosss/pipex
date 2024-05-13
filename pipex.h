@@ -8,9 +8,12 @@
 #include "libft/libft.h"
 
 typedef struct s_stor{
-	char *path;
+	char	**argflag;
+	char	*path;
+	int		fd[2];
 }	t_pipex;
 
 char	*ft_strjoinfree(char const *s1, char const *s2);
+void	free2pointers(char **str);
 
 #endif

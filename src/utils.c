@@ -28,3 +28,15 @@ char	*ft_strjoinfree(char const *s1, char const *s2)
 	free((char *)s1);
 	return (copy);
 }
+
+void free2pointers(char **str)
+{
+	int i;
+
+	i = 0;
+	while(str[i])
+	{
+		free(str[i]);
+		i++;
+	}
+}

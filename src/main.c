@@ -1,62 +1,67 @@
 #include "../pipex.h"
 
-void free2pointers(char **str)
+void find_path(char *arg, char **envp, t_pipex *man)
 {
-	int i;
-
-	i = 0;
-	while(str[i])
-	{
-		free(str[i]);
-		i++;
-	}
-}
-
-void find_path(char **argv, char **envp)
-{
-	char *path;
 	char **partpath;
-	char *line;
 	int i;
-	t_pipex man;
 
 	i = 0;
 	while (ft_strncmp(envp[i], "PATH=", 5) != 0)
 		i++;
 	partpath = ft_split(envp[i] + 5, ':');
+	man->argflag = ft_split(arg, ' ');
 	i = 0;
 	while (partpath[i])
 	{
-		line = ft_strjoin(partpath[i], "/");
-		line = ft_strjoinfree(line, argv[1]);
-		
-		if (access(line, X_OK) == 0)
+		man->path = ft_strjoin(partpath[i], "/");
+		man->path = ft_strjoinfree(man->path, man->argflag[0]);
+		if (access(man->path, X_OK) == 0)
 		{
-			printf("it exists:\n%s\n", line);
+			printf("it exists:\n%s\n", man->path);
 			free2pointers(partpath);
-			man.path = line;
+			return;
 		}
-		free(line);
+		free(man->path);
 		i++;
 	}
+	free2pointers(partpath);
 }
 
-// char *make_path
+void execute(t_pipex *man, char **envp, char *txt)
+{
+	int file;
+	if((file = open(txt, O_WRONLY)) == -1)
+		perror("x");
+	close(man->fd[0]);
+	dup2(man->fd[1], STDOUT_FILENO);
+	execve(man->path, man->argflag, envp);
+}
+void first_child(t_pipex *man, char **envp, char **argv)
+{
+	pid_t p;
+
+	p = fork();
+	if(p == -1)
+	{
+		printf("fork failed\n");
+		exit(1);
+	}
+	if(p == 0)
+	{
+		find_path(argv[2], envp, man);
+		execute(man, envp, argv[1]);
+	}
+}
 
 int main(int argc, char **argv, char **envp)
 {
 	int fd[2];
-	pid_t p;
+	t_pipex *man;
 
-	// if(argc != 4)
-	// {
-	// 	printf("not anoug arg");
-	// 	return(1); 
-	// }
-	find_path(argv, envp);
-	// if(pipe(fd) == -1)
-	// 	perror("Pipe Failed\n");
+	pipe(fd);
+	man = ft_calloc(1, sizeof(t_pipex));
+	pipe(man->fd);
+	first_child(man, envp, argv);
 	
-	// p = fork();
-	
+	free(man);
 }
