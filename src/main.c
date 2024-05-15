@@ -17,7 +17,7 @@ void find_path(char *arg, char **envp, t_pipex *man)
 		man->path = ft_strjoinfree(man->path, man->argflag[0]);
 		if (access(man->path, X_OK) == 0)
 		{
-			printf("it exists:\n%s\n", man->path);
+			// printf("it exists:\n%s\n", man->path);
 			free2pointers(partpath);
 			return;
 		}
@@ -27,13 +27,14 @@ void find_path(char *arg, char **envp, t_pipex *man)
 	free2pointers(partpath);
 }
 
-void execute(t_pipex *man, char **envp, char *txt)
+void execute1(t_pipex *man, char **envp, char *txt)
 {
 	int file;
-	if((file = open(txt, O_WRONLY)) == -1)
-		perror("x");
+	if((file = open(txt, O_RDONLY)) == -1)
+		perror("f");
 	close(man->fd[0]);
-	dup2(man->fd[1], STDOUT_FILENO);
+	dup2(file, 0);
+	dup2(man->fd[1], 1);
 	execve(man->path, man->argflag, envp);
 }
 void first_child(t_pipex *man, char **envp, char **argv)
@@ -49,8 +50,46 @@ void first_child(t_pipex *man, char **envp, char **argv)
 	if(p == 0)
 	{
 		find_path(argv[2], envp, man);
-		execute(man, envp, argv[1]);
+		execute1(man, envp, argv[1]);
 	}
+}
+
+void execute2(t_pipex *man, char **envp, char *txt)
+{
+	int outfile;
+	if((outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0777)) == -1)
+		perror("x");
+	close(man->fd[1]);
+	dup2(man->fd[0], 0);
+	dup2(outfile, 1);
+	execve(man->path, man->argflag, envp);
+}
+void freepath(t_pipex *man)
+{
+	if(man->argflag)
+		free2pointers(man->argflag);
+	free(man->path);
+}
+
+void second_child(t_pipex *man, char **envp, char **argv)
+{
+	pid_t p;
+
+	p = fork();
+	// printf("p = %d\n", p);
+	if(p == -1)
+	{
+		printf("fork failed\n");
+		exit(1);
+	}
+	if(p == 0)
+	{
+		freepath(man);
+		// printf("s\n %d\n", p);
+		find_path(argv[3], envp, man);
+		execute2(man, envp, argv[4]);
+	}
+
 }
 
 int main(int argc, char **argv, char **envp)
@@ -62,6 +101,8 @@ int main(int argc, char **argv, char **envp)
 	man = ft_calloc(1, sizeof(t_pipex));
 	pipe(man->fd);
 	first_child(man, envp, argv);
+	second_child(man, envp, argv);
+
 	
 	free(man);
 }

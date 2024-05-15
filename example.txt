@@ -1,8 +1,0 @@
-Zebra
-Apple
-Lemon
-Banana
-Grape
-Orange
-Kiwi
-Mango
