@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include "libft/libft.h"
-#include <sys/stat.h>
+#include <sys/wait.h>
+#include <errno.h>
 
 typedef struct s_stor{
 	char	**argflag;
