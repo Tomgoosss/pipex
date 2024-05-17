@@ -1,5 +1,16 @@
 #include "../pipex.h"
 
+void error_lines(char *arg, int i)
+{
+	if(i == 1)
+		ft_putstr_fd("command not found: ", 2);
+	if(i == 2)
+		ft_putstr_fd("No such file or directory: ", 2);
+	if(i == 3)
+		ft_putstr_fd("not anough arguments: ", 2);
+	ft_putstr_fd(arg, 2);
+	ft_putstr_fd("\n", 2);
+}
 void find_path(char *arg, char **envp, t_pipex *man)
 {
 	char **partpath;
@@ -11,6 +22,11 @@ void find_path(char *arg, char **envp, t_pipex *man)
 	partpath = ft_split(envp[i] + 5, ':');
 	man->argflag = ft_split(arg, ' ');
 	i = 0;
+	if(access(arg, X_OK) == 0)
+	{
+		man->path = ft_strdup(arg);
+		return ;
+	}
 	while (partpath[i])
 	{
 		man->path = ft_strjoin(partpath[i], "/");
@@ -24,6 +40,7 @@ void find_path(char *arg, char **envp, t_pipex *man)
 		i++;
 	}
 	free2pointers(partpath);
+	error_lines(arg, 1);
 	exit(127);
 }
 
@@ -32,18 +49,19 @@ void execute1(t_pipex *man, char **envp, char *txt)
 	int file;
 	if((file = open(txt, O_RDONLY)) == -1)
 	{
-		perror("open");
+		error_lines(txt, 2);
 		exit(errno);
 	}
-	close(man->fd[0]);
 	dup2(file, 0);
 	dup2(man->fd[1], 1);
+	close(file);
+	close(man->fd[1]);
+	dprintf(2, "argflag = %s\n", man->path);
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
 		exit(errno);
 	}
-	close(file);
 	exit(0);
 }
 void first_child(t_pipex *man, char **envp, char **argv)
@@ -58,12 +76,14 @@ void first_child(t_pipex *man, char **envp, char **argv)
 	}
 	if(p == 0)
 	{
+		close(man->fd[0]);
 		find_path(argv[2], envp, man);
 		execute1(man, envp, argv[1]);
 	}
 	if(p > 0)
 	{
-		wait(NULL);
+		close(man->fd[1]);
+		// wait(NULL);
 	}
 }
 
@@ -72,13 +92,14 @@ void execute2(t_pipex *man, char **envp, char *txt)
 	int outfile;
 	if((outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0777)) == -1)
 	{
-		perror("open");
-		exit(errno);
+		error_lines(txt, 2);
+		close(man->fd[0]);
+		exit(1);
 	}
-	close(man->fd[1]);
 	dup2(man->fd[0], 0);
 	dup2(outfile, 1);
 	close(outfile);
+	close(man->fd[0]);
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
@@ -106,30 +127,31 @@ int second_child(t_pipex *man, char **envp, char **argv)
 	}
 	if(p == 0)
 	{
+		close(man->fd[1]);
 		freepath(man);
 		find_path(argv[3], envp, man);
 		execute2(man, envp, argv[4]);
 	}
-	// if(p > 0)
-	// {
-	// 	waitpid(p, &status, 0);
-	// 	if (WIFEXITED(status))
-	// 		return(WEXITSTATUS(status));
-	// }
+	if(p > 0)
+	{
+		close(man->fd[0]);
+		waitpid(p, &status, 0);
+		wait(NULL);
+		if (WIFEXITED(status))
+			return(WEXITSTATUS(status));
+	}
 	freepath(man);
-	return(0);
+	return(errno);
 }
 
 int main(int argc, char **argv, char **envp)
 {
-	int fd[2];
 	t_pipex *man;
 	int exitstatus;
 
 	exitstatus = 0;
 	if(argc == 5)
 	{
-		pipe(fd);
 		man = ft_calloc(1, sizeof(t_pipex));
 		if(!man)
 			exit(errno);
@@ -137,9 +159,14 @@ int main(int argc, char **argv, char **envp)
 		first_child(man, envp, argv);
 		exitstatus = second_child(man, envp, argv);
 		free(man);
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
 		exit(exitstatus);
 	}
-	else	
+	else
+	{
 		printf("not anoug arg");
+		exit(127);
+	}
 	return(0);
 }

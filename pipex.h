@@ -9,6 +9,9 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+# define READ_END 0
+# define write_end 1
+
 typedef struct s_stor{
 	char	**argflag;
 	char	*path;
