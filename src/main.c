@@ -1,5 +1,11 @@
 #include "../pipex.h"
 
+void freepath(t_pipex *man)
+{
+	if(man->argflag)
+		free2poigitnters(man->argflag);
+	free(man->path);
+}
 void error_lines(char *arg, int i)
 {
 	if(i == 1)
@@ -25,6 +31,7 @@ void find_path(char *arg, char **envp, t_pipex *man)
 	if(access(arg, X_OK) == 0)
 	{
 		man->path = ft_strdup(arg);
+		free2pointers(partpath);
 		return ;
 	}
 	while (partpath[i])
@@ -39,7 +46,7 @@ void find_path(char *arg, char **envp, t_pipex *man)
 		free(man->path);
 		i++;
 	}
-	free2pointers(partpath);
+	freepath(man);
 	error_lines(arg, 1);
 	exit(127);
 }
@@ -50,16 +57,17 @@ void execute1(t_pipex *man, char **envp, char *txt)
 	if((file = open(txt, O_RDONLY)) == -1)
 	{
 		error_lines(txt, 2);
+		freepath(man);
 		exit(errno);
 	}
 	dup2(file, 0);
 	dup2(man->fd[1], 1);
 	close(file);
 	close(man->fd[1]);
-	dprintf(2, "argflag = %s\n", man->path);
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
+		freepath(man);
 		exit(errno);
 	}
 	exit(0);
@@ -79,11 +87,11 @@ void first_child(t_pipex *man, char **envp, char **argv)
 		close(man->fd[0]);
 		find_path(argv[2], envp, man);
 		execute1(man, envp, argv[1]);
+		freepath(man);
 	}
 	if(p > 0)
 	{
 		close(man->fd[1]);
-		// wait(NULL);
 	}
 }
 
@@ -93,6 +101,7 @@ void execute2(t_pipex *man, char **envp, char *txt)
 	if((outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0777)) == -1)
 	{
 		error_lines(txt, 2);
+		free2pointers(man->argflag);
 		close(man->fd[0]);
 		exit(1);
 	}
@@ -103,16 +112,12 @@ void execute2(t_pipex *man, char **envp, char *txt)
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
+		freepath(man);
 		exit(errno);
 	}
 	exit(0);
 }
-void freepath(t_pipex *man)
-{
-	if(man->argflag)
-		free2pointers(man->argflag);
-	free(man->path);
-}
+
 
 int second_child(t_pipex *man, char **envp, char **argv)
 {
@@ -128,7 +133,7 @@ int second_child(t_pipex *man, char **envp, char **argv)
 	if(p == 0)
 	{
 		close(man->fd[1]);
-		freepath(man);
+		free(man->path);
 		find_path(argv[3], envp, man);
 		execute2(man, envp, argv[4]);
 	}
@@ -140,7 +145,6 @@ int second_child(t_pipex *man, char **envp, char **argv)
 		if (WIFEXITED(status))
 			return(WEXITSTATUS(status));
 	}
-	freepath(man);
 	return(errno);
 }
 
@@ -158,6 +162,7 @@ int main(int argc, char **argv, char **envp)
 		pipe(man->fd);
 		first_child(man, envp, argv);
 		exitstatus = second_child(man, envp, argv);
+		freepath(man);
 		free(man);
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);

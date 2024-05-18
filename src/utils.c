@@ -39,4 +39,5 @@ void free2pointers(char **str)
 		free(str[i]);
 		i++;
 	}
+	free(str);
 }

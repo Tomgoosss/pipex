@@ -1,0 +1,8 @@
+42_pipex_tester
+example.txt
+libft
+Makefile
+pipex
+pipex.h
+src
+test.txt
