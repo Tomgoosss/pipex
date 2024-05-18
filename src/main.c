@@ -3,7 +3,7 @@
 void freepath(t_pipex *man)
 {
 	if(man->argflag)
-		free2poigitnters(man->argflag);
+		free2pointers(man->argflag);
 	free(man->path);
 }
 void error_lines(char *arg, int i)
@@ -46,7 +46,7 @@ void find_path(char *arg, char **envp, t_pipex *man)
 		free(man->path);
 		i++;
 	}
-	freepath(man);
+	free2pointers(partpath);
 	error_lines(arg, 1);
 	exit(127);
 }
@@ -57,7 +57,7 @@ void execute1(t_pipex *man, char **envp, char *txt)
 	if((file = open(txt, O_RDONLY)) == -1)
 	{
 		error_lines(txt, 2);
-		freepath(man);
+		free2pointers(man->argflag);
 		exit(errno);
 	}
 	dup2(file, 0);
@@ -67,7 +67,6 @@ void execute1(t_pipex *man, char **envp, char *txt)
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
-		freepath(man);
 		exit(errno);
 	}
 	exit(0);
@@ -87,7 +86,6 @@ void first_child(t_pipex *man, char **envp, char **argv)
 		close(man->fd[0]);
 		find_path(argv[2], envp, man);
 		execute1(man, envp, argv[1]);
-		freepath(man);
 	}
 	if(p > 0)
 	{
@@ -112,7 +110,6 @@ void execute2(t_pipex *man, char **envp, char *txt)
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
-		freepath(man);
 		exit(errno);
 	}
 	exit(0);
