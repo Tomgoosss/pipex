@@ -1,7 +1,8 @@
 example.txt
 libft
-makefile
+Makefile
 out
 pipex
 pipex.h
 src
+test.txt

@@ -1,7 +1,7 @@
-42_pipex_tester
 example.txt
 libft
 Makefile
+out
 pipex
 pipex.h
 src

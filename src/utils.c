@@ -34,10 +34,39 @@ void free2pointers(char **str)
 	int i;
 
 	i = 0;
-	while(str[i])
+	while (str[i])
 	{
 		free(str[i]);
 		i++;
 	}
 	free(str);
+}
+
+void freepath(t_pipex *man)
+{
+	if (man->argflag)
+		free2pointers(man->argflag);
+	free(man->path);
+}
+void error_lines(char *arg, int i)
+{
+	if (i == 1)
+		ft_putstr_fd("command not found: ", 2);
+	if (i == 2)
+		ft_putstr_fd("No such file or directory: ", 2);
+	if (i == 3)
+		ft_putstr_fd("not anough arguments: ", 2);
+	ft_putstr_fd(arg, 2);
+	ft_putstr_fd("\n", 2);
+}
+
+void openexit(char *txt, t_pipex *man)
+{
+	if ((man->outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)
+	{
+		error_lines(txt, 2);
+		freepath(man);
+		free(man);
+		exit(1);
+	}
 }
