@@ -23,7 +23,7 @@ void find_path(char *arg, char **envp, t_pipex *man)
 	int i;
 
 	i = 0;
-	while (ft_strncmp(envp[i], "PATH=", 5) != 0)
+	while (envp[i] && ft_strncmp(envp[i], "PATH=", 5) != 0)
 		i++;
 	partpath = ft_split(envp[i] + 5, ':');
 	man->argflag = ft_split(arg, ' ');
@@ -57,18 +57,19 @@ void execute1(t_pipex *man, char **envp, char *txt)
 	if((file = open(txt, O_RDONLY)) == -1)
 	{
 		error_lines(txt, 2);
-		free2pointers(man->argflag);
+		freepath(man);
 		exit(errno);
 	}
 	dup2(file, 0);
 	dup2(man->fd[1], 1);
 	close(file);
-	close(man->fd[1]);
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
+		freepath(man);
 		exit(errno);
 	}
+	freepath(man);
 	exit(0);
 }
 void first_child(t_pipex *man, char **envp, char **argv)
@@ -96,25 +97,24 @@ void first_child(t_pipex *man, char **envp, char **argv)
 void execute2(t_pipex *man, char **envp, char *txt)
 {
 	int outfile;
-	if((outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0777)) == -1)
+	if((outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)
 	{
 		error_lines(txt, 2);
-		free2pointers(man->argflag);
-		close(man->fd[0]);
+		freepath(man);
 		exit(1);
 	}
 	dup2(man->fd[0], 0);
 	dup2(outfile, 1);
 	close(outfile);
-	close(man->fd[0]);
 	if(execve(man->path, man->argflag, envp) == -1)
 	{
 		perror("execve");
+		freepath(man);
 		exit(errno);
 	}
+	freepath(man);
 	exit(0);
 }
-
 
 int second_child(t_pipex *man, char **envp, char **argv)
 {
@@ -124,13 +124,12 @@ int second_child(t_pipex *man, char **envp, char **argv)
 	p = fork();
 	if(p == -1)
 	{
-		printf("fork failed");
+		perror("fork");
 		exit(errno);
 	}
 	if(p == 0)
 	{
 		close(man->fd[1]);
-		free(man->path);
 		find_path(argv[3], envp, man);
 		execute2(man, envp, argv[4]);
 	}
@@ -159,7 +158,6 @@ int main(int argc, char **argv, char **envp)
 		pipe(man->fd);
 		first_child(man, envp, argv);
 		exitstatus = second_child(man, envp, argv);
-		freepath(man);
 		free(man);
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
