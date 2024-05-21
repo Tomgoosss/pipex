@@ -1,6 +1,18 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tgoossen <tgoossen@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/05/21 09:03:54 by tgoossen          #+#    #+#             */
+/*   Updated: 2024/05/21 09:23:50 by tgoossen         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../pipex.h"
 
-int first_child(t_pipex *man, char **envp, char **argv)
+void	first_child(t_pipex *man, char **envp, char **argv)
 {
 	pid_t	p;
 
@@ -28,7 +40,17 @@ int first_child(t_pipex *man, char **envp, char **argv)
 	}
 }
 
-int second_child(t_pipex *man, char **envp, char **argv)
+void	pathcheck(t_pipex *man, char **argv, char **envp)
+{
+	find_path(argv[3], envp, man);
+	if (!man->argflag)
+	{
+		free(man);
+		exit(1);
+	}
+}
+
+int	second_child(t_pipex *man, char **envp, char **argv)
 {
 	pid_t	p;
 	int		status;
@@ -43,12 +65,7 @@ int second_child(t_pipex *man, char **envp, char **argv)
 	{
 		close(man->fd[1]);
 		openexit(argv[4], man);
-		find_path(argv[3], envp, man);
-		if (!man->argflag)
-		{
-			free(man);
-			exit(1);
-		}
+		pathcheck(man, argv, envp);
 		execute2(man, envp);
 	}
 	if (p > 0)
@@ -74,7 +91,7 @@ int	main(int argc, char **argv, char **envp)
 		if (!man)
 			exit(errno);
 		pipe(man->fd);
-		exitstatus = first_child(man, envp, argv);
+		first_child(man, envp, argv);
 		exitstatus = second_child(man, envp, argv);
 		free(man);
 		close(STDIN_FILENO);

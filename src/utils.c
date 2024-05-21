@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tgoossen <tgoossen@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/05/21 09:04:06 by tgoossen          #+#    #+#             */
+/*   Updated: 2024/05/21 09:21:24 by tgoossen         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../pipex.h"
 
 char	*ft_strjoinfree(char const *s1, char const *s2)
@@ -29,9 +41,9 @@ char	*ft_strjoinfree(char const *s1, char const *s2)
 	return (copy);
 }
 
-void free2pointers(char **str)
+void	free2pointers(char **str)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (str[i])
@@ -42,13 +54,14 @@ void free2pointers(char **str)
 	free(str);
 }
 
-void freepath(t_pipex *man)
+void	freepath(t_pipex *man)
 {
 	if (man->argflag)
 		free2pointers(man->argflag);
 	free(man->path);
 }
-void error_lines(char *arg, int i)
+
+void	error_lines(char *arg, int i)
 {
 	if (i == 1)
 		ft_putstr_fd("command not found: ", 2);
@@ -60,9 +73,10 @@ void error_lines(char *arg, int i)
 	ft_putstr_fd("\n", 2);
 }
 
-void openexit(char *txt, t_pipex *man)
+void	openexit(char *txt, t_pipex *man)
 {
-	if ((man->outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)
+	man->outfile = open(txt, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if (man->outfile == -1)
 	{
 		error_lines(txt, 2);
 		freepath(man);
